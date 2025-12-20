@@ -1,0 +1,22 @@
+services:
+  app:
+    build: .
+    container_name: ai-agents-container
+
+    # Read-only filesystem (volumes remain writable if needed)
+    read_only: true
+
+    # Optional: run as non-root for safer file access
+    user: "${HOST_UID_GID}"
+
+    stdin_open: true   # <- allow interactive input (docker -i)
+    tty: true          # <- allocate a TTY (docker -t)
+
+    working_dir: /app/project
+    network_mode: "host"
+
+    volumes:
+      - ${HOST_FOLDER}:/app/project:Z
+      - ./.llxprt-config:/.llxprt:Z
+
+    command: ["llxprt"]
