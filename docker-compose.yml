@@ -6,8 +6,8 @@ services:
     # Read-only filesystem (volumes remain writable if needed)
     read_only: true
 
-    # Optional: run as non-root for safer file access
-    user: "${HOST_UID_GID}"
+    tmpfs:
+      - /tmp
 
     stdin_open: true   # <- allow interactive input (docker -i)
     tty: true          # <- allocate a TTY (docker -t)
@@ -15,8 +15,11 @@ services:
     working_dir: /app/project
     network_mode: "host"
 
-    volumes:
-      - ${HOST_FOLDER}:/app/project:Z
-      - ./.llxprt-config:/.llxprt:Z
+    environment:
+      - CONTAINER_CMD
 
-    command: ["llxprt"]
+    volumes:
+      - ${HOST_FOLDER:-/tmp}:/app/project:Z
+      - ./.llxprt-config:/home/node/.llxprt:Z
+      - ./.claude-config:/home/node/.claude:Z
+      - ./.claude-config/.claude.json:/home/node/.claude.json:Z

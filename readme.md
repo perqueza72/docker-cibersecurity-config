@@ -1,218 +1,148 @@
-# LLXPRT - AI Provider CLI Manager
+# AI Agent Sandbox
 
-## Project Description
+A Docker-based sandbox for running AI CLI tools (`llxprt` and `claude`) in an isolated, secure environment. It protects sensitive files from the AI agent while giving it access to your project.
 
-LLXPRT is a Command Line Interface (CLI) tool designed to streamline the management of multiple AI providers, such as Google Gemini and Anthropic Claude. This project provides a secure environment for interacting with these services, ensuring sensitive information is protected and file access is restricted.
+## Prerequisites
 
-## Key Features
+- Docker and Docker Compose v2
+- Bash
+- `setfacl` (package `acl` on Debian/Ubuntu)
 
-*   **Secure Environment Variables:** Protects sensitive API keys and other credentials stored in `.env` files from unauthorized access by Large Language Models (LLMs).
-*   **Restricted File Access:** Ensures that LLMs and other components only have access to the designated project directory, preventing broader system exposure.
-*   **Dockerized Setup:** Provides a consistent and isolated development and execution environment using Docker and Docker Compose.
-*   **Multi-Provider Support:** Manages multiple AI providers through a unified interface.
-*   **Sandboxed Execution:** Runs AI agents in a controlled environment with limited system access.
+## First-time Setup
 
-## Getting Started
+`.llxprt-config/` is not tracked in git — it lives only on the host machine and is mounted into the container as a volume. You need to create it once from the provided example:
 
-### Prerequisites
+```bash
+cp -r .llxprt-config.example .llxprt-config
+```
 
-Before you begin, ensure you have the following installed:
+Then edit `.llxprt-config/profiles/deepseek.json` and replace `YOUR_DEEPSEEK_API_KEY` with your actual key.
 
-*   **Docker** (version 20.10 or later)
-*   **Docker Compose** (version 2.0 or later)
-*   **Git** (for cloning the repository)
-*   **Bash shell** (for running setup scripts)
-
-### Installation and Setup
-
-1.  **Clone the repository:**
-    ```bash
-    git clone <repository-url>
-    cd llxprt
-    ```
-
-2.  **Set up environment variables:**
-    Create a `.env` file in the project root (use `.env.sample` as a template if available):
-    ```bash
-    cp .env.sample .env  # If sample exists
-    # Edit .env with your API keys and configuration
-    ```
-
-3.  **Make scripts executable:**
-    ```bash
-    chmod +x start-llxprt.sh set_private_files.sh llxprt-terminal-script.sh
-    ```
-
-4.  **Run the setup script:**
-    ```bash
-    ./llxprt-terminal-script.sh /path/to/your/project
-    ```
-    Or directly:
-    ```bash
-    ./start-llxprt.sh /path/to/your/project ai_user ai_group
-    ```
-
-5.  **Start the container:**
-    The script will automatically build and start the Docker container. Wait for the container to be ready.
-
-## Usage
-
-Once the container is running, you can interact with LLXPRT:
-
-### Basic Commands
-
-*   **Start an interactive session:**
-    ```bash
-    docker exec -it ai-agents-container bash
-    ```
-
-*   **Run LLXPRT commands:**
-    Inside the container, use the `llxprt` command:
-    ```bash
-    llxprt --help
-    ```
-
-*   **List available AI providers:**
-    ```bash
-    llxprt providers list
-    ```
-
-*   **Configure a provider:**
-    ```bash
-    llxprt providers configure <provider-name>
-    ```
-
-### Managing AI Sessions
-
-*   **Start a new AI agent session:**
-    ```bash
-    llxprt session start --provider <provider-name>
-    ```
-
-*   **List active sessions:**
-    ```bash
-    llxprt session list
-    ```
-
-*   **Stop a session:**
-    ```bash
-    llxprt session stop <session-id>
-    ```
-
-### File Management
-
-*   **View project files:**
-    ```bash
-    llxprt files list
-    ```
-
-*   **Read a file:**
-    ```bash
-    llxprt files read <file-path>
-    ```
+For other providers, add a profile JSON under `.llxprt-config/profiles/` and update `settings.json` to set it as `defaultProfile`.
 
 ## Project Structure
 
 ```
-/app/project/
-├── .dockerignore          # Docker ignore patterns
-├── .env                   # Environment variables (protected)
-├── .gitignore            # Git ignore patterns
-├── docker-compose.yml    # Docker Compose configuration
-├── Dockerfile            # Docker build instructions
-├── llxprt-terminal-script.sh  # Main terminal script
-├── readme.md             # This documentation
-├── set_private_files.sh  # Script to protect sensitive files
-├── start-llxprt.sh       # Startup script
-└── .llxprt-config/       # LLXPRT configuration directory
-    ├── oauth/            # OAuth credentials
-    ├── profiles/         # User profiles
-    ├── prompts/          # AI prompt templates
-    ├── provider_accounts.json  # Provider configurations
-    ├── settings.json     # Application settings
-    ├── tmp/              # Temporary files
-    └── todos/            # Task management
+.
+├── Dockerfile                  # Container image (Node 22 via nvm, llxprt, claude)
+├── docker-compose.yml          # Container config (read-only FS, host network, volumes)
+├── llxprt-terminal-script.sh   # Entry point — run this to start a session
+├── start-llxprt.sh             # Core setup and launch script
+├── set_private_files.sh        # Protects .env files via ACLs
+├── .llxprt-config/             # llxprt profiles, settings, prompts (mounted as /.llxprt)
+└── .claude-config/             # Claude Code settings and OAuth credentials (mounted as ~/.claude)
 ```
-
-## Security Features
-
-### File Protection
-- `.env` files are automatically protected using Linux ACLs
-- Only authorized users/groups can access sensitive files
-- AI agents run with restricted file system permissions
-
-### Container Security
-- Read-only filesystem by default
-- Non-root user execution
-- Network isolation with host mode only when needed
-- Volume mounts with proper SELinux/AppArmor labels
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Permission denied errors:**
-   - Ensure your user is in the `docker` group
-   - Check that `.env` files have correct permissions
-
-2. **Container fails to start:**
-   - Check Docker daemon is running: `sudo systemctl status docker`
-   - Verify Docker Compose version: `docker compose version`
-
-3. **LLXPRT command not found:**
-   - Ensure container is running: `docker ps`
-   - Check if installation completed successfully
-
-### Logs and Debugging
-
-*   **View container logs:**
-    ```bash
-    docker logs ai-agents-container
-    ```
-
-*   **Check container status:**
-    ```bash
-    docker ps -a | grep ai-agents-container
-    ```
-
-*   **Restart the container:**
-    ```bash
-    docker compose restart
-    ```
-
-## Development
-
-### Building from Source
-
-1. **Build the Docker image:**
-   ```bash
-   docker build -t llxprt:latest .
-   ```
-
-2. **Run tests:**
-   ```bash
-   docker run --rm llxprt:latest npm test
-   ```
-
-### Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests
-5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Support
-
-For issues, questions, or feature requests:
-- Open an issue on GitHub
-- Check the documentation
-- Review existing issues for similar problems
 
 ---
 
-**Note:** Always keep your `.env` files secure and never commit them to version control. Use `.env.sample` files for template configurations.
+## Scripts
+
+### `llxprt-terminal-script.sh` — main entry point
+
+```
+Usage: ./llxprt-terminal-script.sh [project-folder] [-m <mode>]
+```
+
+| Argument | Default | Description |
+|---|---|---|
+| `project-folder` | current directory (`$PWD`) | Path to the project the AI agent will work on |
+| `-m llxprt` | ✓ default | Start session with `llxprt --yolo` using the deepseek profile |
+| `-m claude` | | Start session with `claude --dangerously-skip-permissions` with caveman mode |
+
+**Examples:**
+
+```bash
+# llxprt session on current directory (default)
+./llxprt-terminal-script.sh
+
+# llxprt session on a specific project
+./llxprt-terminal-script.sh ~/projects/my-app
+
+# claude session on a specific project
+./llxprt-terminal-script.sh ~/projects/my-app -m claude
+```
+
+---
+
+### `start-llxprt.sh` — core launch script (called by llxprt-terminal-script.sh)
+
+```
+Usage: ./start-llxprt.sh <project-folder> <username> <group> [-m <mode>]
+```
+
+| Argument | Description |
+|---|---|
+| `project-folder` | Path to the project directory to mount into the container |
+| `username` | OS user the container runs as (default: `ai_user`) |
+| `group` | OS group for shared file access (default: `ai_group`) |
+| `-m llxprt` | Run `llxprt --yolo` inside the container (default) |
+| `-m claude` | Run `claude --dangerously-skip-permissions` inside the container |
+
+What it does on each run:
+1. Creates `ai_user` / `ai_group` if they don't exist
+2. Adds your user (`$USER`) to `ai_group` for access to files the agent creates
+3. Sets ownership of `.llxprt-config` and `.claude-config` to the container user/group
+4. Runs `set_private_files.sh` to apply ACLs on the project folder
+5. Exports `CONTAINER_CMD` and launches Docker Compose
+6. Waits for the container to be ready, then attaches
+
+---
+
+### `set_private_files.sh` — file permission manager (called by start-llxprt.sh)
+
+```
+Usage: ./set_private_files.sh <project-folder> <group-id>
+```
+
+| Argument | Description |
+|---|---|
+| `project-folder` | Project directory to apply ACLs to |
+| `group-id` | GID of the container group (`ai_group`) |
+
+What it does:
+- Grants the container group `rwx` on all files in the project (current and new files via default ACLs)
+- Strips group access (`---`) from any `.env*` file (except `.env.sample`) to protect secrets
+
+---
+
+## Modes
+
+### llxprt (default)
+
+Runs `llxprt --yolo` inside the container. Uses the `deepseek` profile by default (configured in `.llxprt-config/settings.json`). `--yolo` skips confirmation prompts.
+
+AI provider profiles are stored in `.llxprt-config/profiles/`.
+
+### claude
+
+Runs `claude --dangerously-skip-permissions` inside the container. The `--dangerously-skip-permissions` flag allows the agent to run without asking for confirmation on file and shell operations.
+
+**First run:** Claude will prompt for OAuth login in the terminal. Credentials are saved to `.claude-config/` and reused on subsequent runs.
+
+Caveman mode is enabled globally via `.claude-config/CLAUDE.md`.
+
+---
+
+## Security
+
+- **Read-only container filesystem** — only `/tmp` and mounted volumes are writable
+- **Non-root execution** — container runs as `ai_user:ai_group`
+- **`.env` file protection** — ACLs remove group access from `.env*` files; the agent cannot read secrets
+- **Volume isolation** — the agent only sees the mounted project folder and its own config dirs
+- **Host network** — required for internet access and connecting to local services (e.g. LocalStack on port 4566)
+
+---
+
+## Troubleshooting
+
+**Permission denied on files created by the agent:**
+Re-login or run `newgrp ai_group` — group membership takes effect at session start.
+
+**Container fails to start:**
+```bash
+docker logs ai-agents-container
+docker compose --file ~/workspace/docker-cibersecurity-config/docker-compose.yml logs
+```
+
+**Container already running from a previous session:**
+The script uses `--force-recreate`, so it will replace the existing container automatically.

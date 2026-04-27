@@ -1,4 +1,4 @@
-#sh
+#!/bin/sh
 
 FOLDER=$1
 GROUP_ID=$2
@@ -11,7 +11,20 @@ fi
 
 echo "Running on folder $FOLDER"
 
-setfacl -R -m g:$GROUP_ID:rwx $FOLDER
+CLAUDE_JSON="$(dirname "$(readlink -f "$0")")/.claude-config/.claude.json"
+if [ ! -f "$CLAUDE_JSON" ]; then
+    touch "$CLAUDE_JSON"
+    chmod 600 "$CLAUDE_JSON"
+fi
+setfacl -m "g:$GROUP_ID:rw" "$CLAUDE_JSON"
+
+find "$FOLDER" \
+    -type d \( -name node_modules -o -name dist -o -name cdk.out -o -name .llxprt-config -o -name .claude-config \) -prune \
+    -o -print0 | xargs -0 -r setfacl -m g:$GROUP_ID:rwx
+
+find "$FOLDER" \
+    -type d \( -name node_modules -o -name dist -o -name cdk.out -o -name .llxprt-config -o -name .claude-config \) -prune \
+    -o -type d -print0 | xargs -0 -r setfacl -d -m g:$GROUP_ID:rwx
 PROTECTED_FILES=$(find $FOLDER \
     -type d \( -name node_modules -o -name dist -o -name cdk.out \) -prune \
     -o -type f -name ".env*" ! -name ".env.sample" \
