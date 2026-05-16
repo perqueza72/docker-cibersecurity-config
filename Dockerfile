@@ -27,7 +27,29 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   psmisc \
   lsof \
   socat \
+  netcat-openbsd \
   ca-certificates \
+  chromium \
+  libglib2.0-0 \
+  libnss3 \
+  libatk1.0-0 \
+  libatk-bridge2.0-0 \
+  libcups2 \
+  libdrm2 \
+  libxkbcommon0 \
+  libx11-6 \
+  libxcomposite1 \
+  libxdamage1 \
+  libxext6 \
+  libxfixes3 \
+  libxrandr2 \
+  libgbm1 \
+  libasound2 \
+  libpango-1.0-0 \
+  libpangocairo-1.0-0 \
+  libgtk-3-0 \
+  fonts-liberation \
+  xvfb \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
